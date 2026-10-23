@@ -1,3 +1,16 @@
+# macOS metadata and filesystem management files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100/
+.Trashes/
+.fseventsd/
+.TemporaryItems/
+.DocumentRevisions-V100/
+.VolumeIcon.icns
+.apdisk
+
 .env
 .venv/
 __pycache__/

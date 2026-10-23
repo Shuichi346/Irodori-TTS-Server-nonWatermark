@@ -1,10 +1,18 @@
 # Irodori OpenAI TTS Server
 
-OpenAI Text-to-Speech API compatible server for [Irodori-TTS](https://github.com/Aratako/Irodori-TTS).
+OpenAI Text-to-Speech API compatible server using [Irodori-TTS-nonWatermark](https://github.com/Shuichi346/Irodori-TTS-nonWatermark), a fork of [Irodori-TTS](https://github.com/Aratako/Irodori-TTS) with audio watermark processing removed.
 
 This server targets [Irodori-TTS-v4-Small](https://huggingface.co/Aratako/Irodori-TTS-v4-Small). It supports voice cloning, Voice Design, OpenAI-style response formats, and automatic long text chunking.
 
 Standard requests return one complete audio response. Chunk-level Server-Sent Events are also available for long text.
+
+## About this fork
+
+This repository, [Irodori-TTS-Server-nonWatermark](https://github.com/Shuichi346/Irodori-TTS-Server-nonWatermark), is a fork of [Aratako/Irodori-TTS-Server](https://github.com/Aratako/Irodori-TTS-Server). It provides the OpenAI-compatible API server while using Shuichi346's [Irodori-TTS-nonWatermark](https://github.com/Shuichi346/Irodori-TTS-nonWatermark) as its inference library.
+
+The inference fork removes the audio watermark processing stage and the `silentcipher` dependency, avoiding the work and dependencies associated with that stage. Inference speed has not been benchmarked in this server repository.
+
+The Python package and import names remain `irodori-tts` and `irodori_tts`. Model weights, tokenizer assets, and codec assets continue to come from the existing Hugging Face repositories; switching the inference library does not require a different model checkpoint or API request format.
 
 ## Features
 
@@ -36,8 +44,8 @@ A CUDA or ROCm GPU is recommended for practical inference.
 ## Installation
 
 ```bash
-git clone https://github.com/Aratako/Irodori-TTS-Server.git
-cd Irodori-TTS-Server
+git clone https://github.com/Shuichi346/Irodori-TTS-Server-nonWatermark.git
+cd Irodori-TTS-Server-nonWatermark
 uv sync --extra cu128
 cp .env.example .env
 ```
