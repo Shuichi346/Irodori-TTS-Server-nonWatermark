@@ -5,6 +5,8 @@ import threading
 import time
 from pathlib import Path
 
+import torch
+
 from irodori_tts.inference_runtime import (
     InferenceRuntime,
     RuntimeKey,
@@ -45,7 +47,7 @@ class RuntimeManager:
                 t0 = time.perf_counter()
                 self._checkpoint_path = self._resolve_checkpoint_path()
                 logger.info("checkpoint resolved: %s", self._checkpoint_path)
-                self._runtime = InferenceRuntime.from_key(
+                runtime = InferenceRuntime.from_key(
                     RuntimeKey(
                         checkpoint=self._checkpoint_path,
                         model_device=self._resolve_device(self.settings.model_device),
@@ -59,6 +61,8 @@ class RuntimeManager:
                         compile_dynamic=bool(self.settings.compile_dynamic),
                     )
                 )
+                _release_load_cache(runtime)
+                self._runtime = runtime
                 elapsed = time.perf_counter() - t0
                 logger.info("runtime loaded in %.2fs", elapsed)
             return self._runtime
@@ -100,3 +104,24 @@ class RuntimeManager:
         if raw in {"", "auto"}:
             return default_runtime_device()
         return str(value)
+
+
+def _release_load_cache(runtime: InferenceRuntime) -> None:
+    # Casting model weights after loading can leave large unused allocations.
+    # Release them before the first request, even when periodic release is off.
+    device_types = {
+        getattr(getattr(runtime, "model_device", None), "type", None),
+        getattr(getattr(runtime, "codec_device", None), "type", None),
+    } - {None, "cpu"}
+    if not device_types:
+        return
+
+    accelerator = torch.accelerator.current_accelerator(check_available=True)
+    if accelerator is None or accelerator.type not in device_types:
+        return
+
+    if accelerator.type == "mps":
+        torch.mps.empty_cache()
+    else:
+        torch.accelerator.empty_cache()
+    logger.info("released %s load cache", accelerator.type)

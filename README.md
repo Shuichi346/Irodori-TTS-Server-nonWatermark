@@ -29,7 +29,7 @@ The Python package and import names remain `irodori-tts` and `irodori_tts`. Mode
 
 For local Python:
 
-- Python 3.10
+- Python 3.13 or later
 - uv
 - FFmpeg for compressed audio formats
 

@@ -536,7 +536,7 @@ async def _acquire_synthesis_slot() -> asyncio.Semaphore:
         semaphore = _get_synthesis_semaphore()
         await asyncio.wait_for(semaphore.acquire(), timeout=timeout)
         return semaphore
-    except asyncio.TimeoutError as exc:
+    except TimeoutError as exc:
         raise HTTPException(
             status_code=503,
             detail=f"Synthesis queue is full. Retry after a moment. timeout={timeout:.1f}s",

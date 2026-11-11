@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import threading
+from types import SimpleNamespace
 
 import pytest
+import torch
 
 from irodori_openai_tts import runtime as runtime_module
 from irodori_openai_tts.config import Settings
@@ -96,3 +98,49 @@ def test_runtime_downloads_hf_checkpoint_when_local_checkpoint_is_unset(monkeypa
     monkeypatch.setattr(runtime_module, "download_hf_checkpoint", fake_download)
 
     assert manager._resolve_checkpoint_path() == "/cache/model.safetensors"
+
+
+@pytest.mark.parametrize(
+    ("accelerator_type", "model_device", "codec_device", "expected_cache"),
+    [
+        (None, "cpu", "cpu", None),
+        ("mps", "cpu", "cpu", None),
+        ("mps", "mps", "cpu", "mps"),
+        ("mps", "cpu", "mps", "mps"),
+        ("mps", "mps", "mps", "mps"),
+        ("xpu", "xpu:0", "xpu:1", "accelerator"),
+    ],
+)
+def test_runtime_releases_loading_cache_before_serving(
+    tmp_path, monkeypatch, accelerator_type, model_device, codec_device, expected_cache
+):
+    checkpoint = tmp_path / "model.safetensors"
+    checkpoint.write_bytes(b"test")
+    manager = RuntimeManager(Settings(checkpoint=str(checkpoint), _env_file=None))
+    loaded = SimpleNamespace(
+        model_device=torch.device(model_device), codec_device=torch.device(codec_device)
+    )
+    events = []
+
+    def load(_key):
+        events.append("loaded")
+        return loaded
+
+    def release(cache):
+        assert not manager.is_loaded
+        events.append(cache)
+
+    monkeypatch.setattr(runtime_module.InferenceRuntime, "from_key", staticmethod(load))
+    monkeypatch.setattr(
+        torch.accelerator,
+        "current_accelerator",
+        lambda *, check_available: torch.device(accelerator_type) if accelerator_type else None,
+    )
+    monkeypatch.setattr(torch.mps, "empty_cache", lambda: release("mps"))
+    monkeypatch.setattr(torch.accelerator, "empty_cache", lambda: release("accelerator"))
+
+    assert manager.get() is loaded
+    assert manager.is_loaded
+    assert manager.get() is loaded
+    expected = ["loaded"] if expected_cache is None else ["loaded", expected_cache]
+    assert events == expected

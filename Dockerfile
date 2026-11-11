@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-ARG BASE_IMAGE=python:3.10-slim
+ARG BASE_IMAGE=python:3.13-slim
 FROM ${BASE_IMAGE}
 ARG IRODORI_TTS_BACKEND=cu128
 

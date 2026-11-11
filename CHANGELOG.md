@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-11-11
+
+### Added
+
+- Synced upstream funding metadata for Aratako.
+
+### Changed
+
+- Raised the minimum Python version to 3.13 and switched the default Docker image to Python 3.13.
+- Updated the Irodori-TTS inference dependency to nonWatermark fork revision `0d742c1`.
+
+### Fixed
+
+- Released unused accelerator memory after loading the inference runtime, before serving the first request.
+
 ## 2026-10-23
 
 ### Added
