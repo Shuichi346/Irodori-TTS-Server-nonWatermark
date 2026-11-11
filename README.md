@@ -39,23 +39,25 @@ For Docker:
 - NVIDIA Container Toolkit or Docker Desktop GPU support for CUDA inference
 - ROCm-capable Docker host for AMD GPU inference
 
-A CUDA or ROCm GPU is recommended for practical inference.
+For local inference on Apple Silicon, use the macOS PyTorch wheels via the `cpu` extra.
 
 ## Installation
+
+Install the fork with the locked CPU/macOS dependencies.
 
 ```bash
 git clone https://github.com/Shuichi346/Irodori-TTS-Server-nonWatermark.git
 cd Irodori-TTS-Server-nonWatermark
-uv sync --extra cu128
+uv sync --locked --python 3.13 --extra cpu
 cp .env.example .env
 ```
 
-Choose one PyTorch backend extra:
+For an existing checkout, sync again after updating with one PyTorch backend extra.
 
 ```bash
-uv sync --extra cu128  # NVIDIA CUDA 12.8
-uv sync --extra rocm   # AMD ROCm on Linux
-uv sync --extra cpu    # CPU-only
+uv sync --locked --extra cu128  # NVIDIA CUDA 12.8
+uv sync --locked --extra rocm   # AMD ROCm on Linux
+uv sync --locked --extra cpu    # CPU or macOS MPS
 ```
 
 The PyTorch backend extras are mutually exclusive. The `cu128` extra uses the PyTorch CUDA 12.8 index, the `rocm` extra uses the PyTorch ROCm index on Linux, and the `cpu` extra uses the CPU PyTorch index on Linux/Windows.
@@ -99,7 +101,12 @@ Inference-time CFG and Sway Sampling settings are ignored for MeanFlow checkpoin
 uv run --no-sync python -m irodori_openai_tts --host 0.0.0.0 --port 8088
 ```
 
-This uses the PyTorch backend selected during `uv sync`.
+This uses the PyTorch backend selected during `uv sync`. For an explicit Apple Silicon setup, set these values in `.env` before starting the server.
+
+```dotenv
+IRODORI_MODEL_DEVICE=mps
+IRODORI_CODEC_DEVICE=cpu
+```
 
 Open the health endpoint:
 
@@ -108,6 +115,8 @@ curl http://localhost:8088/health
 ```
 
 ## Docker
+
+The Dockerfile defaults to `python:3.13-slim` and installs the locked dependencies.
 
 Create `.env` first:
 
@@ -164,6 +173,19 @@ For CPU-only Docker images, set `IRODORI_TTS_BACKEND=cpu` in `.env` before build
 Reference voices placed in `./voices` are available inside the container. Downloaded Hugging Face files are kept in a Docker volume so they are reused across container recreations.
 
 ## Quick Usage
+
+### Text-only synthesis
+
+With the default voice settings, send a text-only request using the built-in `none` voice. The first speech request loads the model.
+
+```bash
+curl --fail http://localhost:8088/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{"model":"irodori-tts","input":"こんにちは。音声合成のテストです。","voice":"none","response_format":"wav"}' \
+  --output speech.wav
+```
+
+### Synthesis with a reference voice
 
 Put a reference voice in `voices/`. Files can be added before or after the server starts; the directory is scanned when a request resolves a voice.
 

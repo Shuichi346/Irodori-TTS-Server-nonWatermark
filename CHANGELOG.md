@@ -10,6 +10,7 @@
 
 - Raised the minimum Python version to 3.13 and switched the default Docker image to Python 3.13.
 - Updated the Irodori-TTS inference dependency to nonWatermark fork revision `0d742c1`.
+- Documented the locked Python 3.13 setup, macOS MPS configuration, and a text-only speech request.
 
 ### Fixed
 
